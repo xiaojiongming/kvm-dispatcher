@@ -35,8 +35,6 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
     def handle(self):
         # while True:
         print(self.request.recv(8192))
-            # self.queue.put(self.request.recv(8192))
-            # return json.dumps('{\'ok\':\'123\'}')
         time.sleep(2)
         returndict = {'ok':'true'}
         self.request.send(json.dumps(returndict).encode('utf-8'))
@@ -70,12 +68,6 @@ if __name__ == '__main__':
     # threading.Thread(target=getq, args=(q,)).start()
     server = ThreadedTCPStreamServer(('0.0.0.0', 8081), ThreadedTCPStreamHandler, queue=q)
     ip, port = server.server_address
-    # NWORKERS = 16
-    # for i in range(NWORKERS):
-    #     server_thread = threading.Thread(target=server.serve_forever)
-    #     server_thread = threading.Thread(target=server.serve_forever)
-    #     server_thread.start()
-    # server.serve_forever()
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
@@ -89,11 +81,12 @@ if __name__ == '__main__':
         client = socket.socket()
         client.connect(ip)
         client.send(convertjson(mesg))
-        receive = str(client.recv(1024))
+        receive = client.recv(1024)
         try:
             jsonobj = json.loads(receive)
+            print(jsonobj)
         except Exception as e:
-            print(receive)
+            print('invalid json received')
 
     for i in range(5):
         time.sleep(0.5)
