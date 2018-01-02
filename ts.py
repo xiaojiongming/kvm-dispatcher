@@ -4,6 +4,8 @@ import threading
 import json
 import socket
 import time
+from Worker import Worker
+import ConfigReader
 
 class ThreadedTCPStreamServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True,
@@ -17,6 +19,7 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, client_address, server):
         self.queue = server.queue
         self._functions = {}
+        self.add(Worker.heartbeat)
         socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
 
     # def handle(self):
@@ -33,11 +36,31 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
     #         # self.finish()
 
     def handle(self):
-        # while True:
-        print(self.request.recv(8192))
-        time.sleep(2)
-        returndict = {'ok':'true'}
-        self.request.send(json.dumps(returndict).encode('utf-8'))
+
+        jsonobj = self.request.recv(8192)
+        responsedict = {}
+        requestdict = {}
+        config = ConfigReader.ConfigReader('./main.cfg')
+        if config.getbykey('debug', 'main') == 'on':
+            print('recevied json from ' + str(self.client_address) + '::' + str(jsonobj))
+        try:
+            requestdict = json.loads(jsonobj)
+        except json.decoder.JSONDecodeError as e:
+            print('invalid json' + str(e))
+            responsedict['ok'] = 'no'
+            responsedict['localtimestap'] = time.time()
+            self.request.send(json.dumps(responsedict).encode())
+
+        if requestdict != {}:
+            if requestdict.__contains__('function'):
+                func = requestdict['function']
+                executed = self._functions[func](requestdict)
+                if config.getbykey('debug', 'main') == 'on':
+                    print('sendback json to ' + str(self.client_address) + '::' + str(executed))
+                self.request.send(executed)
+
+
+
 
     def add(self, func):
         self._functions[func.__name__] = func
@@ -66,28 +89,34 @@ if __name__ == '__main__':
 
     q = queue.Queue()
     # threading.Thread(target=getq, args=(q,)).start()
-    server = ThreadedTCPStreamServer(('0.0.0.0', 8081), ThreadedTCPStreamHandler, queue=q)
+    server = ThreadedTCPStreamServer(('0.0.0.0', 8082), ThreadedTCPStreamHandler, queue=q)
     ip, port = server.server_address
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
 
-    def client(ip,mesg):
 
-        def convertjson(mesg):
-            returnd = {'str':mesg}
-            return json.dumps(returnd).encode('utf-8')
+    def client(*ip):
+
+        def convertjson(func, arg):
+            returndict = {}
+            returndict['timestap'] = time.time()
+            returndict['function'] = func
+            for key in arg:
+                returndict[key] = arg[key]
+            return json.dumps(returndict).encode()
 
         client = socket.socket()
         client.connect(ip)
-        client.send(convertjson(mesg))
-        receive = client.recv(1024)
+        args = {'testk': 'testv'}
+        client.send(convertjson(func='heartbeat', arg=args))
+        receive = client.recv(8192)
         try:
             jsonobj = json.loads(receive)
-            print(jsonobj)
         except Exception as e:
             print('invalid json received')
 
-    for i in range(5):
+
+    for i in range(2):
         time.sleep(0.5)
-        threading.Thread(target=client,args=(('localhost',8081),'client'+str(i))).start()
+        threading.Thread(target=client, args=(('localhost', 8082))).start()
