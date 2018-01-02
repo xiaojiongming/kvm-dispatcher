@@ -66,13 +66,6 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
         self._functions[func.__name__] = func
 
 
-class testfunc:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def doit(self, *args, **kwargs):
-        return kwargs
-
 
 if __name__ == '__main__':
     def getq(q: queue.Queue):
