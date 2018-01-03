@@ -1,16 +1,18 @@
-import threading
-import queue
+import time
+import json
 
 
-class WorkerPool:
-    def __init__(self, workercount):
-        self.__globalq = queue.Queue(workercount)
-        self.__globaljoblock = threading.Lock()
+class Worker:
+    def __init__(self):
+        pass
 
-
-
-class Worker(threading.Thread):
-    pass
+    @staticmethod
+    def heartbeat(arg: dict):
+        returnval = {}
+        returnval['localtimestap'] = time.time()
+        returnval['receivedtimestap'] = arg['timestap']
+        returnval['ok'] = 'yes'
+        return json.dumps(returnval).encode()
 
 if __name__ == "__main__":
     pass
