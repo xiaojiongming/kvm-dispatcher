@@ -61,6 +61,15 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
         self._functions[func.__name__] = func
 
 
+class startlistener:
+    def __init__(self, globalq):
+        config = ConfigReader.ConfigReader('./main.cfg')
+        locallisten = config.getbykey('ip', 'main'), int(config.getbykey('port', 'main'))
+        self.__server = ThreadedTCPStreamServer(locallisten, ThreadedTCPStreamHandler, queue=globalq)
+
+    def start(self):
+        self.__server.serve_forever()
+
 if __name__ == '__main__':
     def getq(q: queue.Queue):
         while True:

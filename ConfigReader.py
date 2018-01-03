@@ -14,6 +14,7 @@ class ConfigReader:
         else:
             return -1, 'no such key'
 
+
 if __name__ == '__main__':
     c = ConfigReader('./main.cfg')
     c.getbykey('worker', 'main')
