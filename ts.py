@@ -1,11 +1,10 @@
 import socketserver
 import queue
-import threading
 import json
-import socket
 import time
 from Worker import Worker
 import ConfigReader
+
 
 class ThreadedTCPStreamServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True,
@@ -36,7 +35,6 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
     #         # self.finish()
 
     def handle(self):
-
         jsonobj = self.request.recv(8192)
         responsedict = {}
         requestdict = {}
@@ -59,12 +57,8 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
                     print('sendback json to ' + str(self.client_address) + '::' + str(executed))
                 self.request.send(executed)
 
-
-
-
     def add(self, func):
         self._functions[func.__name__] = func
-
 
 
 if __name__ == '__main__':
@@ -84,32 +78,8 @@ if __name__ == '__main__':
     # threading.Thread(target=getq, args=(q,)).start()
     server = ThreadedTCPStreamServer(('0.0.0.0', 8082), ThreadedTCPStreamHandler, queue=q)
     ip, port = server.server_address
-    server_thread = threading.Thread(target=server.serve_forever)
-    server_thread.daemon = True
-    server_thread.start()
+    server.serve_forever()
 
-
-    def client(*ip):
-
-        def convertjson(func, arg):
-            returndict = {}
-            returndict['timestap'] = time.time()
-            returndict['function'] = func
-            for key in arg:
-                returndict[key] = arg[key]
-            return json.dumps(returndict).encode()
-
-        client = socket.socket()
-        client.connect(ip)
-        args = {'testk': 'testv'}
-        client.send(convertjson(func='heartbeat', arg=args))
-        receive = client.recv(8192)
-        try:
-            jsonobj = json.loads(receive)
-        except Exception as e:
-            print('invalid json received')
-
-
-    for i in range(2):
-        time.sleep(0.5)
-        threading.Thread(target=client, args=(('localhost', 8082))).start()
+    # server_thread = threading.Thread(target=server.serve_forever)
+    # server_thread.daemon = True
+    # server_thread.start()
