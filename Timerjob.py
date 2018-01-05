@@ -16,6 +16,10 @@ class jober:
         for job in self.__jobq:
             pass
 
+    def addselfjob(self):
+        pass
+
+
 
 class Heartbeatchecker:
     def __init__(self, remote):

@@ -4,14 +4,15 @@ import threading
 import queue
 import time
 import ConfigReader
-
+import os
 
 class ENVChecker:
-    def __init__(self):
+    def __init__(self, config):
         '''
         plain : check all environment status include network/storage/libvirt etc
         if everything seems ok, then start Listener and timer job.
         '''
+        self.__config = config
         self.checkall()
 
     def checkall(self):
@@ -24,7 +25,10 @@ class ENVChecker:
                then try test sanlock, if ok return 0
         :return:
         '''
-        return 0
+        if os.path.isdir('/storage/storageinfo'):
+            if os.path.isfile('/storage/globalmeta'):
+                return 0
+        return 1
 
     def checknetwork(self):
         '''
@@ -44,11 +48,22 @@ class ENVChecker:
         '''
         pass
 
+    def getallhost(self):
+        '''
+        plain: get all hosts list from /storage/storageinfo/globalmeta
+        example:
+        [hostlist]
+        hosts = 192.168.122.2;192.168.122.3
+        :return: 
+        '''
+        hostlist = self.__config.getbykey('hosts', 'global').split(';')
+
+
 
 class start:
     def __init__(self):
         self.__config = ConfigReader.ConfigReader('./main.cfg')
-        envchecker = ENVChecker()
+        envchecker = ENVChecker(self.__config)
         if envchecker.checkall() == 0:
             envchecker.checksanlock()
             self.__globalq = queue.Queue()
@@ -66,7 +81,7 @@ class start:
         jober = Timerjob.jober()
         while True:
             job = self.__globalq.get()
-            jober.addjob(jober)
+            jober.addjob(job)
             jober.executejob()
             time.sleep(int(self.__config.getbykey('jobsleep', 'jober')))
 
