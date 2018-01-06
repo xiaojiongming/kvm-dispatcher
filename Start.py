@@ -5,6 +5,11 @@ import queue
 import time
 import ConfigReader
 import os
+import socket
+import Tools
+import sys
+import Worker
+
 
 class ENVChecker:
     def __init__(self, config):
@@ -14,6 +19,9 @@ class ENVChecker:
         '''
         self.__config = config
         self.checkall()
+        self.hostlist = []
+        self.ipaddress = ''
+        self.__tools = Tools.globalinfotool()
 
     def checkall(self):
         if not (self.checkstorage() and self.checknetwork()):
@@ -37,6 +45,21 @@ class ENVChecker:
             2.can connect to other host?
         :return:
         '''
+        listenport = self.__config.getbykey('port', 'main')
+        testbind = socket.socket()
+        try:
+            testbind.bind(('0.0.0.0', self.__config.getbykey('port', 'main')))
+        except OSError as e:
+            print('port ' + str(listenport) + ' already in use')
+            if self.__config.getbykey('debug', 'main') == 'on':
+                print('DEBUG::' + str(e))
+            return -1
+        finally:
+            testbind.close()
+
+        self.__hostlist = self.__tools.getallhost()
+        if self.__config.getbykey('debug', 'main') == 'on':
+            print('DEBUG::get host list ' + str(self.__hostlist) + ' from global meta ,will send heart beat')
         return 0
 
     def checksanlock(self):
@@ -48,25 +71,18 @@ class ENVChecker:
         '''
         pass
 
-    def getallhost(self):
-        '''
-        plain: get all hosts list from /storage/storageinfo/globalmeta
-        example:
-        [hostlist]
-        hosts = 192.168.122.2;192.168.122.3
-        :return: 
-        '''
-        hostlist = self.__config.getbykey('hosts', 'global').split(';')
-
-
 
 class start:
     def __init__(self):
         self.__config = ConfigReader.ConfigReader('./main.cfg')
-        envchecker = ENVChecker(self.__config)
-        if envchecker.checkall() == 0:
-            envchecker.checksanlock()
+        self.__envchecker = ENVChecker(self.__config)
+
+        if self.__envchecker.checkall() == 0:
+            self.__envchecker.checksanlock()
             self.__globalq = queue.Queue()
+        else:
+            print('some thing error ,trace log')
+            sys.exit(-1)
 
     def startlistenerandjober(self):
         '''
@@ -84,6 +100,12 @@ class start:
             jober.addjob(job)
             jober.executejob()
             time.sleep(int(self.__config.getbykey('jobsleep', 'jober')))
+
+    def addinitjobtoq(self):
+        tools = Tools.globalinfotool()
+        for host in iter(tools.getallhost()):
+            heartbeatjob = Worker.Worker.heartbeat()
+            self.__globalq.put()
 
 
 if __name__ == '__main__':

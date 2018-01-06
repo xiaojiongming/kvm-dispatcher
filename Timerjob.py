@@ -20,7 +20,6 @@ class jober:
         pass
 
 
-
 class Heartbeatchecker:
     def __init__(self, remote):
         self.__config = ConfigReader.ConfigReader('./main.cfg')

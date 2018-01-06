@@ -18,7 +18,7 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, client_address, server):
         self.queue = server.queue
         self._functions = {}
-        self.add(Worker.heartbeat)
+        self.add(Worker.heartbeatdealer)
         socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
 
     # def handle(self):
