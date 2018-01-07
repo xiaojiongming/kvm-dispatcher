@@ -14,7 +14,7 @@ class jober:
 
     def executejob(self):
         for job in self.__jobq:
-            pass
+            job.doit()
 
     def addselfjob(self):
         pass
@@ -39,6 +39,9 @@ class Heartbeatchecker:
                     self.__connectiontimeout) + '] remain retry:' + str(self.__retry))
         else:
             self.handlenonresponse()
+
+    def doit(self):
+        self.send()
 
     def handlenonresponse(self):
         '''

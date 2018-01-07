@@ -8,7 +8,7 @@ import os
 import socket
 import Tools
 import sys
-import Worker
+
 
 
 class ENVChecker:
@@ -91,6 +91,7 @@ class start:
         '''
         listener = Listener.startlistener(self.__globalq)
         threading.Thread(target=listener.start).start()
+        threading.Thread(target=self.addheartbeatjobtoq).start()
         threading.Thread(target=self.starttimerjob).start()
 
     def starttimerjob(self):
@@ -101,11 +102,14 @@ class start:
             jober.executejob()
             time.sleep(int(self.__config.getbykey('jobsleep', 'jober')))
 
-    def addinitjobtoq(self):
-        tools = Tools.globalinfotool()
-        for host in iter(tools.getallhost()):
-            heartbeatjob = Worker.Worker.heartbeat()
-            self.__globalq.put()
+    def addheartbeatjobtoq(self):
+        pollinginterval = self.__config.getbykey('interval', 'heartbeat')
+        while True:
+            tools = Tools.globalinfotool()
+            for host in iter(tools.getallhost()):
+                heartbeatjob = Timerjob.Heartbeatchecker(host)
+                self.__globalq.put(heartbeatjob)
+                time.sleep(pollinginterval)
 
 
 if __name__ == '__main__':
