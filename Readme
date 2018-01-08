@@ -1,2 +1,14 @@
-[struct]
-1.all node connect to nfs sharestorage and mount point is /storage
+sturct
+
+compute node  --> other compute node : | remote job handle ---queue---> timer job |
+
+there two job kind : 1.sync job (direct return job result to request node without wait)
+
+                     2.async job (dipatcher put the job to queue ,then timer job class pick the job and execute
+                     only reponse to request node job already execute or any condition error)
+                     
+job type: 1.heartbeat check
+          2.performance check
+          
+          3.migration job
+          4.vm list/status job
