@@ -2,9 +2,8 @@ import socketserver
 import queue
 import json
 import time
-from Worker import Worker
 import ConfigReader
-
+import Job
 
 class ThreadedTCPStreamServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True,
@@ -18,7 +17,7 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, client_address, server):
         self.queue = server.queue
         self._functions = {}
-        self.add(Worker.heartbeatdealer)
+        self.add(Job.Heartbeat.heartbeathandle)
         socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
 
     # def handle(self):

@@ -19,10 +19,11 @@ class globalinfotool:
 class jsontool:
 
     @staticmethod
-    def convertjson(func, arg):
+    def convertjson(func, **kwargs):
         returndict = {}
         returndict['timestap'] = time.time()
         returndict['function'] = func
-        for key in arg:
-            returndict[key] = arg[key]
+        if kwargs:
+            for key in kwargs:
+                returndict[key] = kwargs[key]
         return json.dumps(returndict).encode()

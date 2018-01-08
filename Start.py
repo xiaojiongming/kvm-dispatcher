@@ -1,4 +1,4 @@
-import Timerjob
+import Job
 import Listener
 import threading
 import queue
@@ -8,7 +8,6 @@ import os
 import socket
 import Tools
 import sys
-
 
 
 class ENVChecker:
@@ -80,6 +79,7 @@ class start:
         if self.__envchecker.checkall() == 0:
             self.__envchecker.checksanlock()
             self.__globalq = queue.Queue()
+            self.__jobwaitq = queue.Queue()
         else:
             print('some thing error ,trace log')
             sys.exit(-1)
@@ -92,11 +92,12 @@ class start:
         listener = Listener.startlistener(self.__globalq)
         threading.Thread(target=listener.start).start()
         threading.Thread(target=self.addheartbeatjobtoq).start()
-        threading.Thread(target=self.starttimerjob).start()
+        threading.Thread(target=self.starttimerjob, args=(self.__jobwaitq)).start()
 
-    def starttimerjob(self):
-        jober = Timerjob.jober()
+    def starttimerjob(self, jobwaitq: queue.Queue):
+        jober = Job.jober()
         while True:
+            jobwaitq.put(jober.getjobq())
             job = self.__globalq.get()
             jober.addjob(job)
             jober.executejob()
@@ -107,9 +108,9 @@ class start:
         while True:
             tools = Tools.globalinfotool()
             for host in iter(tools.getallhost()):
-                heartbeatjob = Timerjob.Heartbeatchecker(host)
+                heartbeatjob = Job.Heartbeat(host)
                 self.__globalq.put(heartbeatjob)
-                time.sleep(pollinginterval)
+            time.sleep(pollinginterval)
 
 
 if __name__ == '__main__':
