@@ -17,10 +17,11 @@ class ENVChecker:
         if everything seems ok, then start Listener and timer job.
         '''
         self.__config = config
+        self.__tools = Tools.globalinfotool()
         self.checkall()
         self.hostlist = []
         self.ipaddress = ''
-        self.__tools = Tools.globalinfotool()
+
 
     def checkall(self):
         if not (self.checkstorage() and self.checknetwork()):
@@ -92,7 +93,7 @@ class start:
         listener = Listener.startlistener(self.__globalq)
         threading.Thread(target=listener.start).start()
         threading.Thread(target=self.addheartbeatjobtoq).start()
-        threading.Thread(target=self.starttimerjob, args=(self.__jobwaitq)).start()
+        threading.Thread(target=self.starttimerjob, args=(self.__jobwaitq,)).start()
 
     def starttimerjob(self, jobwaitq: queue.Queue):
         jober = Job.jober()
@@ -109,7 +110,7 @@ class start:
             tools = Tools.globalinfotool()
             for host in iter(tools.getallhost()):
                 heartbeatjob = Job.Heartbeat(host)
-                self.__globalq.put(heartbeatjob)
+                self.__globalq.put(int(heartbeatjob))
             time.sleep(pollinginterval)
 
 

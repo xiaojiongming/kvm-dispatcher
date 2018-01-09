@@ -12,3 +12,10 @@ job type: 1.heartbeat check
           
           3.migration job
           4.vm list/status job
+
+
+[install]
+ubuntu 17.04+
+apt-get install python3.6-dev gcc
+wget https://bootstrap.pypa.io/get-pip.py && python3.6 get-pip.py
+pip3.6 install -r requirements

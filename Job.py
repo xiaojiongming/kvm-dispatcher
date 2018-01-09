@@ -30,16 +30,17 @@ class jober:
 class Heartbeat:
     def __init__(self, remote):
         self.__config = ConfigReader.ConfigReader('./main.cfg')
-        self.remotehost = remote
-        self.__connectiontimeout = self.__config.getbykey('timeout', 'heartbeat')
+        self.__remotehost = remote
+        self.__connectiontimeout = int(self.__config.getbykey('timeout', 'heartbeat'))
         self.__retry = int(self.__config.getbykey('retry', 'heartbeat'))
+        self.__port = int(self.__config.getbykey('port','main'))
 
     def doit(self):
         if self.__retry != 0:
             client = socket.socket()
-            client.timeout = self.__connectiontimeout
+            client.settimeout(self.__connectiontimeout)
             try:
-                client.connect(self.remotehost)
+                client.connect((self.__remotehost,self.__port))
                 client.send(Tools.jsontool.convertjson(func='heartbeat'))
                 receive = client.recv(8192)
                 try:
@@ -49,8 +50,12 @@ class Heartbeat:
                     print('receive from ' + str(client) + '::' + str(receive))
             except socket.timeout as e:
                 self.__retry = self.__retry - 1
-                print('connect to ' + str(self.remotehost) + ' timeout[' + str(
+                print('connect to ' + str(self.__remotehost) + ' timeout[' + str(
                     self.__connectiontimeout) + '] remain retry:' + str(self.__retry))
+                self.doit()
+            except OSError as e:
+                self.__retry = self.__retry - 1
+                print('connect to '+str(self.__remotehost) + ' with error::'+str(e))
                 self.doit()
             finally:
                 client.close()
@@ -71,6 +76,7 @@ class Heartbeat:
                 then update cluster info in share storage
         :return:
         '''
+        print('host::'+str(self.__remotehost)+' in non response , handle nonresponse')
         pass
 
 

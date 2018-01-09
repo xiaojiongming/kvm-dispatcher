@@ -9,11 +9,17 @@ class globalinfotool:
         self.__config = ConfigReader.ConfigReader('/storage/storageinfo/globalmeta')
 
     def getallhost(self):
-        return self.__config.getbykey('hosts', 'hostlist').split(';').remove(self.getselfipaddr())
+        hostlist = self.__config.getbykey('hosts', 'global').split(';')
+        selfip = hostlist.remove(self.getselfipaddr())
+        for k, ip in enumerate(hostlist):
+            if ip == selfip:
+                hostlist.remove(k+1)
+        return hostlist
 
     @staticmethod
     def getselfipaddr():
         return socket.gethostbyname(socket.gethostname())
+
 
 
 class jsontool:
