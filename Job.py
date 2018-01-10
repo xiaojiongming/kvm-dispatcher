@@ -19,6 +19,7 @@ class jober:
     def executejob(self):
         for job in self.__jobq:
             job.doit()
+        self.__jobq.clear()
 
     def addselfjob(self):
         pass
@@ -36,7 +37,7 @@ class Heartbeat:
         self.__port = int(self.__config.getbykey('port','main'))
 
     def doit(self):
-        if self.__retry != 0:
+        while self.__retry != 0:
             client = socket.socket()
             client.settimeout(self.__connectiontimeout)
             try:
@@ -45,28 +46,30 @@ class Heartbeat:
                 receive = client.recv(8192)
                 try:
                     jsonobj = json.loads(receive)
+                    print('receive heartbeat response '+str(jsonobj))
+                    return 0
                 except Exception as e:
                     print('invalid json received')
                     print('receive from ' + str(client) + '::' + str(receive))
+                    return 0
             except socket.timeout as e:
                 self.__retry = self.__retry - 1
                 print('connect to ' + str(self.__remotehost) + ' timeout[' + str(
                     self.__connectiontimeout) + '] remain retry:' + str(self.__retry))
-                self.doit()
             except OSError as e:
                 self.__retry = self.__retry - 1
-                print('connect to '+str(self.__remotehost) + ' with error::'+str(e))
-                self.doit()
+                print('connect to '+str(self.__remotehost) + ' with error::'+str(e)+' remain retry:' + str(self.__retry))
             finally:
                 client.close()
-        else:
-            self.handlenonresponse()
+                time.sleep(2)
+        self.handlenonresponse()
+        return 0
 
     @staticmethod
-    def heartbeathandle(self, arg: dict):
+    def heartbeathandle(args):
         returnval = {}
         returnval['localtimestap'] = time.time()
-        returnval['receivedtimestap'] = arg['timestap']
+        returnval['receivedtimestap'] = args['timestap']
         returnval['ok'] = 'yes'
         return json.dumps(returnval).encode()
 
@@ -77,7 +80,10 @@ class Heartbeat:
         :return:
         '''
         print('host::'+str(self.__remotehost)+' in non response , handle nonresponse')
-        pass
+        return 0
+
+    def getremote(self):
+        return self.__remotehost
 
 
 class Perf:

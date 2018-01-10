@@ -18,7 +18,6 @@ class ENVChecker:
         '''
         self.__config = config
         self.__tools = Tools.globalinfotool()
-        self.checkall()
         self.hostlist = []
         self.ipaddress = ''
 
@@ -48,7 +47,7 @@ class ENVChecker:
         listenport = self.__config.getbykey('port', 'main')
         testbind = socket.socket()
         try:
-            testbind.bind(('0.0.0.0', self.__config.getbykey('port', 'main')))
+            testbind.bind(('0.0.0.0', int(self.__config.getbykey('port', 'main'))))
         except OSError as e:
             print('port ' + str(listenport) + ' already in use')
             if self.__config.getbykey('debug', 'main') == 'on':
@@ -91,9 +90,14 @@ class start:
         :return:
         '''
         listener = Listener.startlistener(self.__globalq)
-        threading.Thread(target=listener.start).start()
-        threading.Thread(target=self.addheartbeatjobtoq).start()
-        threading.Thread(target=self.starttimerjob, args=(self.__jobwaitq,)).start()
+        threads = []
+        threads.append(threading.Thread(target=self.addheartbeatjobtoq))
+        threads.append(threading.Thread(target=listener.start))
+        threads.append(threading.Thread(target=self.starttimerjob, args=(self.__jobwaitq,)))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
 
     def starttimerjob(self, jobwaitq: queue.Queue):
         jober = Job.jober()
@@ -102,15 +106,18 @@ class start:
             job = self.__globalq.get()
             jober.addjob(job)
             jober.executejob()
+            self.__globalq.task_done()
             time.sleep(int(self.__config.getbykey('jobsleep', 'jober')))
 
+
+
     def addheartbeatjobtoq(self):
-        pollinginterval = self.__config.getbykey('interval', 'heartbeat')
+        pollinginterval = int(self.__config.getbykey('interval', 'heartbeat'))
         while True:
             tools = Tools.globalinfotool()
             for host in iter(tools.getallhost()):
                 heartbeatjob = Job.Heartbeat(host)
-                self.__globalq.put(int(heartbeatjob))
+                self.__globalq.put(heartbeatjob)
             time.sleep(pollinginterval)
 
 

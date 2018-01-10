@@ -18,5 +18,3 @@ class ConfigReader:
 if __name__ == '__main__':
     c = ConfigReader('./main.cfg')
     c.getbykey('worker', 'main')
-
-
