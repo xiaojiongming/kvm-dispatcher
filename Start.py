@@ -83,6 +83,7 @@ class start:
         else:
             print('some thing error ,trace log')
             sys.exit(-1)
+        self.pollinginterval = int(self.__config.getbykey('interval', 'heartbeat'))
 
     def startlistenerandjober(self):
         '''
@@ -93,33 +94,31 @@ class start:
         threads = []
         threads.append(threading.Thread(target=self.addheartbeatjobtoq))
         threads.append(threading.Thread(target=listener.start))
-        threads.append(threading.Thread(target=self.starttimerjob, args=(self.__jobwaitq,)))
+        threads.append(threading.Thread(target=self.timerjobdeal))
         for thread in threads:
             thread.start()
         for thread in threads:
             thread.join()
 
-    def starttimerjob(self, jobwaitq: queue.Queue):
+    def timerjobdeal(self):
         jober = Job.jober()
         while True:
-            jobwaitq.put(jober.getjobq())
+            self.__jobwaitq.put(jober.getjobq())
             job = self.__globalq.get()
             jober.addjob(job)
             jober.executejob()
             self.__globalq.task_done()
             time.sleep(int(self.__config.getbykey('jobsleep', 'jober')))
 
-
-
     def addheartbeatjobtoq(self):
-        pollinginterval = int(self.__config.getbykey('interval', 'heartbeat'))
         while True:
             tools = Tools.globalinfotool()
             for host in iter(tools.getallhost()):
                 heartbeatjob = Job.Heartbeat(host)
+                perfjob = Job.Perf(host)
                 self.__globalq.put(heartbeatjob)
-            time.sleep(pollinginterval)
-
+                self.__globalq.put(perfjob)
+            time.sleep(self.pollinginterval)
 
 if __name__ == '__main__':
     s = start()

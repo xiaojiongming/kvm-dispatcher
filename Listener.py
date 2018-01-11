@@ -6,6 +6,7 @@ import ConfigReader
 import Job
 import traceback
 
+
 class ThreadedTCPStreamServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True,
                  queue=None):
@@ -19,6 +20,7 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
         self.queue = server.queue
         self._functions = {}
         self.add('heartbeat', Job.Heartbeat.heartbeathandle)
+        self.add('performance', Job.Perf.perfhandle)
         socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
 
     # def handle(self):
@@ -39,13 +41,14 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
         responsedict = {}
         requestdict = {}
         config = ConfigReader.ConfigReader('./main.cfg')
-        if config.getbykey('debug', 'main') == 'on':
-            print('recevied json from ' + str(self.client_address) + '::' + str(jsonobj))
+        # if config.getbykey('debug', 'main') == 'on':
+        #     print('recevied json from ' + str(self.client_address) + '::' + str(jsonobj))
         try:
             requestdict = json.loads(jsonobj)
         except json.decoder.JSONDecodeError as e:
             traceback.print_tb(e)
-            print('invalid json' + str(e))
+            print('invalid json' +
+                  (e))
             responsedict['ok'] = 'no'
             responsedict['localtimestap'] = time.time()
             self.request.send(json.dumps(responsedict).encode())
@@ -58,7 +61,7 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
                     print('sendback json to ' + str(self.client_address) + '::' + str(executed))
                 self.request.send(executed)
 
-    def add(self, funcname,func):
+    def add(self, funcname, func):
         self._functions[funcname] = func
 
 
@@ -70,6 +73,7 @@ class startlistener:
 
     def start(self):
         self.__server.serve_forever()
+
 
 if __name__ == '__main__':
     def getq(q: queue.Queue):

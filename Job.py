@@ -30,40 +30,13 @@ class jober:
 
 class Heartbeat:
     def __init__(self, remote):
-        self.__config = ConfigReader.ConfigReader('./main.cfg')
-        self.__remotehost = remote
-        self.__connectiontimeout = int(self.__config.getbykey('timeout', 'heartbeat'))
-        self.__retry = int(self.__config.getbykey('retry', 'heartbeat'))
-        self.__port = int(self.__config.getbykey('port','main'))
+        self.remote = remote
 
     def doit(self):
-        while self.__retry != 0:
-            client = socket.socket()
-            client.settimeout(self.__connectiontimeout)
-            try:
-                client.connect((self.__remotehost,self.__port))
-                client.send(Tools.jsontool.convertjson(func='heartbeat'))
-                receive = client.recv(8192)
-                try:
-                    jsonobj = json.loads(receive)
-                    print('receive heartbeat response '+str(jsonobj))
-                    return 0
-                except Exception as e:
-                    print('invalid json received')
-                    print('receive from ' + str(client) + '::' + str(receive))
-                    return 0
-            except socket.timeout as e:
-                self.__retry = self.__retry - 1
-                print('connect to ' + str(self.__remotehost) + ' timeout[' + str(
-                    self.__connectiontimeout) + '] remain retry:' + str(self.__retry))
-            except OSError as e:
-                self.__retry = self.__retry - 1
-                print('connect to '+str(self.__remotehost) + ' with error::'+str(e)+' remain retry:' + str(self.__retry))
-            finally:
-                client.close()
-                time.sleep(2)
-        self.handlenonresponse()
-        return 0
+        soc = Tools.socketbuilder(self.remote,'heartbeat',{})
+        returnval = soc.buildsocketandsend()
+        if returnval != {}:
+            print(returnval)
 
     @staticmethod
     def heartbeathandle(args):
@@ -73,32 +46,37 @@ class Heartbeat:
         returnval['ok'] = 'yes'
         return json.dumps(returnval).encode()
 
-    def handlenonresponse(self):
+    @staticmethod
+    def handlenonresponse(remote):
         '''
         plain: if non response happend , try any fence method or try acquire sanlock
                 then update cluster info in share storage
         :return:
         '''
-        print('host::'+str(self.__remotehost)+' in non response , handle nonresponse')
+        print('host::'+str(remote)+' in non response , handle nonresponse')
         return 0
 
     def getremote(self):
-        return self.__remotehost
+        return self.remote
 
 
 class Perf:
-    def __init__(self):
+    def __init__(self, remote):
         self.perfconut = {}
-
-    def doit(self):
+        self.remote =remote
         self.perfconut['cpu'] = self.getcpuinfo()
         self.perfconut['mem'] = self.getmeminfo()
         self.perfconut['net'] = self.getnetinfo()
         self.perfconut['disk'] = self.getdiskinfo()
-        return self.perfconut
+
+    def doit(self):
+        soc = Tools.socketbuilder(self.remote, 'performance', self.perfconut)
+        returnval = soc.buildsocketandsend()
+        if returnval != {}:
+            print(returnval)
 
     def getcpuinfo(self):
-        cpu = psutil.cpu_percent(interval=1, percpu=False)
+        cpu = psutil.cpu_times()
         cpuinfo = {}
         cpuinfo['user'] = cpu.user
         cpuinfo['system'] = cpu.system
@@ -129,8 +107,19 @@ class Perf:
          read_bytes=1292641280, write_bytes=607412224, read_time=67136, write_time=118664, read_merged_count=7319,
          write_merged_count=15834, busy_time=34544)}
         :return:
+        :return:
         '''
         return psutil.disk_io_counters(perdisk=True)
+
+    @staticmethod
+    def perfhandle(args):
+        returnval = {}
+        perf = Perf(remote='')
+        for key in perf.perfconut:
+            returnval[key] = perf.perfconut[key]
+        returnval['receivedtimestap'] = args['timestap']
+        returnval['ok'] = 'yes'
+        return Tools.jsontool.convertjson('PerformanceResponse',returnval)
 
 
 class jobcheck:
@@ -138,4 +127,4 @@ class jobcheck:
         self.jobwaitq = q
 
     def doit(self):
-        return q.get()
+        return self.jobwaitq.get()
