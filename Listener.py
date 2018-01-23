@@ -5,6 +5,7 @@ import time
 import ConfigReader
 import Job
 import traceback
+import logging
 
 
 class ThreadedTCPStreamServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -41,14 +42,12 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
         responsedict = {}
         requestdict = {}
         config = ConfigReader.ConfigReader('./main.cfg')
-        # if config.getbykey('debug', 'main') == 'on':
-        #     print('recevied json from ' + str(self.client_address) + '::' + str(jsonobj))
         try:
             requestdict = json.loads(jsonobj)
+            logging.info('get request from ' + str(self.client_address) + '::' + str(requestdict))
         except json.decoder.JSONDecodeError as e:
-            traceback.print_tb(e)
-            print('invalid json' +
-                  (e))
+            logging.error('invalid json' +
+                          str(e))
             responsedict['ok'] = 'no'
             responsedict['localtimestap'] = time.time()
             self.request.send(json.dumps(responsedict).encode())
@@ -57,8 +56,7 @@ class ThreadedTCPStreamHandler(socketserver.BaseRequestHandler):
             if requestdict.__contains__('function'):
                 func = requestdict['function']
                 executed = self._functions[func](requestdict)
-                if config.getbykey('debug', 'main') == 'on':
-                    print('sendback json to ' + str(self.client_address) + '::' + str(executed))
+                logging.debug('response to ' + str(self.client_address) + '::' + str(executed))
                 self.request.send(executed)
 
     def add(self, funcname, func):

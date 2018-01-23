@@ -8,6 +8,7 @@ import os
 import socket
 import Tools
 import sys
+import logging
 
 
 class ENVChecker:
@@ -45,20 +46,20 @@ class ENVChecker:
         :return:
         '''
         listenport = self.__config.getbykey('port', 'main')
-        testbind = socket.socket()
-        try:
-            testbind.bind(('0.0.0.0', int(self.__config.getbykey('port', 'main'))))
-        except OSError as e:
-            print('port ' + str(listenport) + ' already in use')
-            if self.__config.getbykey('debug', 'main') == 'on':
-                print('DEBUG::' + str(e))
-            return -1
-        finally:
-            testbind.close()
-
+        bindok = False
+        while not bindok:
+            try:
+                testbind = socket.socket()
+                testbind.bind(('0.0.0.0', int(self.__config.getbykey('port', 'main'))))
+                bindok = True
+            except OSError as e:
+                logging.error('port ' + str(listenport) + ' already in use , next try 3 seconds latter')
+                time.sleep(3)
+            finally:
+                testbind.close()
         self.__hostlist = self.__tools.getallhost()
         if self.__config.getbykey('debug', 'main') == 'on':
-            print('DEBUG::get host list ' + str(self.__hostlist) + ' from global meta ,will send heart beat')
+            logging.debug('DEBUG::get host list ' + str(self.__hostlist) + ' from global meta ,will send heart beat')
         return 0
 
     def checksanlock(self):
@@ -80,8 +81,9 @@ class start:
             self.__envchecker.checksanlock()
             self.__globalq = queue.Queue()
             self.__jobwaitq = queue.Queue()
+
         else:
-            print('some thing error ,trace log')
+            logging.error('some thing error check environment')
             sys.exit(-1)
         self.pollinginterval = int(self.__config.getbykey('interval', 'heartbeat'))
 
@@ -121,5 +123,7 @@ class start:
             time.sleep(self.pollinginterval)
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='/storage/' + str(Tools.globalinfotool.getselfipaddr()) + '.log', level=logging.INFO)
+    logging.info('app start')
     s = start()
     s.startlistenerandjober()

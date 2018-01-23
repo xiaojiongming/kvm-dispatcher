@@ -4,7 +4,7 @@ import time
 import json
 import Tools
 import psutil
-
+import logging
 
 class jober:
     def __init__(self):
@@ -33,10 +33,11 @@ class Heartbeat:
         self.remote = remote
 
     def doit(self):
-        soc = Tools.socketbuilder(self.remote,'heartbeat',{})
+        soc = Tools.socketbuilder(self.remote, 'heartbeat', {})
+        logging.info('request to ' + self.remote + '::heartbeat')
         returnval = soc.buildsocketandsend()
         if returnval != {}:
-            print(returnval)
+            logging.info('get response ' + str(returnval))
 
     @staticmethod
     def heartbeathandle(args):
@@ -53,7 +54,7 @@ class Heartbeat:
                 then update cluster info in share storage
         :return:
         '''
-        print('host::'+str(remote)+' in non response , handle nonresponse')
+        logging.info('host::' + str(remote) + ' in non response , handle nonresponse')
         return 0
 
     def getremote(self):
@@ -63,17 +64,18 @@ class Heartbeat:
 class Perf:
     def __init__(self, remote):
         self.perfconut = {}
-        self.remote =remote
+        self.remote = remote
         self.perfconut['cpu'] = self.getcpuinfo()
         self.perfconut['mem'] = self.getmeminfo()
         self.perfconut['net'] = self.getnetinfo()
         self.perfconut['disk'] = self.getdiskinfo()
 
     def doit(self):
-        soc = Tools.socketbuilder(self.remote, 'performance', self.perfconut)
+        soc = Tools.socketbuilder(self.remote, 'performance', {})
+        logging.info('request to ' + self.remote + '::performance')
         returnval = soc.buildsocketandsend()
         if returnval != {}:
-            print(returnval)
+            logging.info('get response ' + str(returnval))
 
     def getcpuinfo(self):
         cpu = psutil.cpu_times()
@@ -119,7 +121,7 @@ class Perf:
             returnval[key] = perf.perfconut[key]
         returnval['receivedtimestap'] = args['timestap']
         returnval['ok'] = 'yes'
-        return Tools.jsontool.convertjson('PerformanceResponse',returnval)
+        return Tools.jsontool.convertjson('PerformanceResponse', returnval)
 
 
 class jobcheck:

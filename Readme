@@ -7,12 +7,20 @@ there two job kind : 1.sync job (direct return job result to request node withou
                      2.async job (dipatcher put the job to queue ,then timer job class pick the job and execute
                      only reponse to request node job already execute or any condition error)
                      
-job type: 1.heartbeat check
-          2.performance check
+job type: 1.heartbeat check     <comlate>
+          2.performance check   <complate>
           
           3.migration job
           4.vm list/status job
 
+
+[logging]
+INFO:root:request to 192.168.122.3::heartbeat
+INFO:root:get request from ('192.168.122.3', 52020)::{'timestap': 1516723523.2015908, 'function': 'heartbeat'}
+INFO:root:get response {'localtimestap': 1516723521.3008528, 'receivedtimestap': 1516723522.3820977, 'ok': 'yes'}
+INFO:root:request to 192.168.122.3::performance
+INFO:root:get request from ('192.168.122.3', 52022)::{'timestap': 1516723527.2116897, 'function': 'performance'}
+INFO:root:get response {'timestap': 1516723525.313241, 'function': 'PerformanceResponse', 'cpu': {'user': 10.75, 'system': 6.98, 'idle': 14161.38, 'iowait': 85.62}, 'mem': {'available': 774926336, 'percent': 25.3, 'free': 456908800}, 'net': {'lo': [26912, 26912, 362, 362, 0, 0, 0, 0], 'ens3': [994156, 986947, 5771, 9027, 0, 0, 3575, 0]}, 'disk': {'sr0': [0, 0, 0, 0, 0, 0, 0, 0, 0], 'vda1': [8252, 739, 391214080, 101867520, 428892, 8324, 0, 1300, 65032]}, 'receivedtimestap': 1516723526.3938596, 'ok': 'yes'}
 
 [install]
 ubuntu 17.04+

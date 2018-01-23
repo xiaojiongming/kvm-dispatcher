@@ -3,7 +3,9 @@ import socket
 import time
 import json
 import Job
-
+import logging
+import traceback
+import sys
 
 class globalinfotool:
     def __init__(self):
@@ -53,22 +55,24 @@ class socketbuilder:
                 self.client.send(jsontool.convertjson(self.targetfunc, self.__data))
                 receive = self.client.recv(8192)
                 try:
-                    jsonobj = json.loads(receive)
-                    print('receive ' + str(jsonobj['response']) + ' from ' + str(self.client.getpeername()))
+                    jsonobj = json.loads(receive.decode())
                     return jsonobj
                 except Exception as e:
-                    print('invalid json received')
-                    print('receive from ' + str(self.client.getpeername()) + '::' + str(receive))
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    logging.error('invalid json received receive from ' + str(self.client.getpeername()) + '::' + repr(
+                        traceback.format_tb(exc_traceback)))
                     return {}
             except socket.timeout as e:
                 self.__retry = self.__retry - 1
-                print('connect to ' + str(self.__remotehost) + ' timeout[' + str(
+                logging.error('connect to ' + str(self.__remotehost) + ' timeout[' + str(
                     self.__connectiontimeout) + '] remain retry:' + str(self.__retry))
             except OSError as e:
                 self.__retry = self.__retry - 1
-                print('connect to ' + str(self.__remotehost) + ' with error::' + str(e) + ' remain retry:' + str(
+                logging.error(
+                    'connect to ' + str(self.__remotehost) + ' with error::' + str(e) + ' remain retry:' + str(
                     self.__retry))
             finally:
                 self.client.close()
                 time.sleep(2)
         Job.Heartbeat.handlenonresponse(self.__remotehost)
+
