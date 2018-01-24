@@ -1,2 +1,3 @@
 configparser
 psutil
+libvirt-python
