@@ -15,7 +15,7 @@ job type: 1.heartbeat check     <comlate>
 
 
 [logging]
-INFO:root:request to 192.168.122.3::heartbeat
+INFO:root:request to 192.168.122.3::heartbeata
 INFO:root:get request from ('192.168.122.3', 52020)::{'timestap': 1516723523.2015908, 'function': 'heartbeat'}
 INFO:root:get response {'localtimestap': 1516723521.3008528, 'receivedtimestap': 1516723522.3820977, 'ok': 'yes'}
 INFO:root:request to 192.168.122.3::performance
@@ -24,9 +24,16 @@ INFO:root:get response {'timestap': 1516723525.313241, 'function': 'PerformanceR
 
 [install]
 ubuntu 17.04+
-apt-get install python3.6-dev gcc libvirt-dev pkg-config
+apt-get install python3.6-dev gcc libvirt-dev pkg-config sanlock python-sanlock libsanlock1-* libvirt-sanlock
 wget https://bootstrap.pypa.io/get-pip.py && python3.6 get-pip.py
 pip3.6 install -r requirements
+chmod +x /usr/lib/libvirt/lock-driver/sanlock.so
+
+'''
+ becasue of bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=854696 ,need copy wdmd(sanlock bin) to systemd directory
+ cp /etc/init.d/wdmd /lib/systemd/systemd-wdmd
+ chmod +x /lib/systemd/systemd-wdmd
+'''
 
 /etc/libvirt/libvirtd
 >listen_tls = 0
@@ -36,3 +43,21 @@ pip3.6 install -r requirements
 
 /etc/default/libvirtd
 >libvirtd_opts="-l"
+
+
+[libvirt]
+check if vm support memballoon
+
+virsh # qemu-monitor-command 4 --hmp 'info balloon'
+balloon: actual=976
+
+get guest mem actual status
+http://doumadou.github.io/libvirttong-guo-qmpxie-yi-yu-qemu-monitortong-xin.html
+
+[fedora 27]
+# yum install gcc python3-devel sanlock libvirt libvirt-python3 libvirt-lock-sanlock qemu-kvm iptables-services
+
+[sanlock]
+https://libvirt.org/locking-sanlock.html
+
+
